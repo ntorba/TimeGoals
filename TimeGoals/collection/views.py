@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
 from collection.forms import ProfileForm
 from collection.models import Profile
+from django.template.defaultfilters import slugify
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
 
 # Create your views here.
 def index(request):
@@ -18,9 +21,14 @@ def profile_detail(request, slug):
         'profile': profile,
     })
 
+@login_required
 def edit_profile(request, slug):
     #grab the object
     profile = Profile.objects.get(slug=slug)
+
+    #make sure the logged in suer is the owner of the thing
+    if profile.user != request.user:
+        raise Http404
     #set the form we're using..
     form_class = ProfileForm
     #if we're coming to this view from a submitted form,
@@ -37,5 +45,29 @@ def edit_profile(request, slug):
     #and render the template
     return render(request, 'profiles/edit_profile.html', {
         'profile': profile,
+        'form': form,
+    })
+
+def create_profile(request):
+    form_class = ProfileForm
+    #if we are coming from a submitted form, do this
+    if request.method == 'POST':
+        #grab the data fromteh submitted form and apply to the form
+        form = form_class(request.POST)
+        if form.is_valid():
+            #create an instance but do not save yet
+            profile = form.save(commit=False)
+            #set additional details
+            profile.user = request.user
+            profile.slug = slugify(profile.name)
+            #save the object
+            profile.save()
+            #redirect to our newly created thing
+            return redirect('profile_detail', slug=profile.slug)
+    #otherwise just create the form
+    else:
+        form = form_class()
+
+    return render(request, 'profiles/create_profile.html', {
         'form': form,
     })

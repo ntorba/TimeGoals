@@ -6,7 +6,11 @@
 {% block content %}
   <h1> {{ profile.name }}</h1>
   <p> {{ profile.description }}</p>
-  <a href="{% url 'edit_profile' slug=profile.slug %}">
-    Edit  me!
-  </a>
+  {% if user == profile.user %}
+  <p>
+    <a href="{% url 'edit_profile' slug=profile.slug}">
+      Edit  me!
+    </a>
+  </p>
+  {% endif %}
 {% endblock content %}
